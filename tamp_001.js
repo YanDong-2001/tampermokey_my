@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         获取图片URL和二维码信息并提供复制功能
 // @namespace    http://tampermonkey.net/
-// @version      0.7
+// @version      1.0
 // @description  Ctrl+右键点击图片时:显示URL、并识别其中可能存在的二维码(目前来看png格式最佳)，同时提供下载新生成的二维码功能
 // @match        *://*/*
 // @grant        GM_setClipboard
@@ -163,23 +163,23 @@
         const img = new Image();
         img.crossOrigin = "Anonymous";
         img.onload = function() {
-            // 创建canvas并绘制图片
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
             canvas.width = img.width;
             canvas.height = img.height;
             ctx.drawImage(img, 0, 0, img.width, img.height);
+            
+            // 图像预处理
             const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const processedImageData = preProcessImage(imageData);
             
             // 使用jsQR库检测二维码
-            const code = jsQR(imageData.data, imageData.width, imageData.height);
+            const code = jsQR(processedImageData.data, processedImageData.width, processedImageData.height);
 
-            // 获取相关DOM元素
             const qrResult = document.getElementById('qrResult');
             const qrTextarea = document.getElementById('qrTextarea');
             const copyQrButton = document.getElementById('copyQrButton');
             
-            // 处理检测结果
             if (code) {
                 qrResult.textContent = "检测到二维码：";
                 qrTextarea.value = code.data;
@@ -199,6 +199,41 @@
             document.getElementById('copyQrButton').style.display = 'none';
         };
         img.src = imageUrl;
+    }
+
+    // 图像预处理函数
+    function preProcessImage(imageData) {
+        const data = imageData.data;
+        for (let i = 0; i < data.length; i += 4) {
+            // 转换为灰度
+            const avg = (data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114);
+            
+            // 应用自适应阈值
+            const threshold = getLocalThreshold(data, i, imageData.width, imageData.height);
+            const value = avg < threshold ? 0 : 255;
+            
+            data[i] = data[i + 1] = data[i + 2] = value;
+        }
+        return imageData;
+    }
+
+    // 获取局部阈值
+    function getLocalThreshold(data, index, width, height) {
+        const blockSize = 11; // 局部区域大小
+        const x = (index / 4) % width;
+        const y = Math.floor((index / 4) / width);
+        let sum = 0;
+        let count = 0;
+
+        for (let j = Math.max(0, y - blockSize / 2); j < Math.min(height, y + blockSize / 2); j++) {
+            for (let i = Math.max(0, x - blockSize / 2); i < Math.min(width, x + blockSize / 2); i++) {
+                const idx = (j * width + i) * 4;
+                sum += (data[idx] * 0.299 + data[idx + 1] * 0.587 + data[idx + 2] * 0.114);
+                count++;
+            }
+        }
+
+        return sum / count;
     }
 
     // 生成新的二维码
