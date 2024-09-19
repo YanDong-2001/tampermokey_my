@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         获取图片URL和二维码信息并提供复制功能
 // @namespace    http://tampermonkey.net/
-// @version      0.4
+// @version      0.5
 // @description  Ctrl+右键点击图片时:显示URL、并识别其中可能存在的二维码(目前来看png格式最佳)，同时提供下载新生成的二维码功能
 // @match        *://*/*
 // @grant        GM_setClipboard
@@ -80,20 +80,35 @@
     // 用于存储当前弹窗的变量
     let currentPopup = null;
 
-    // 修改事件监听器
-    document.addEventListener('mousedown', function(e) {
-        // 检查是否同时按下Ctrl键和鼠标右键，以及点击的是否为图片
-        if (e.ctrlKey && e.button === 2 && e.target.tagName.toLowerCase() === 'img') {
-            e.preventDefault();  // 阻止默认的右键菜单
-            e.stopPropagation(); // 阻止事件冒泡
-            var imageUrl = e.target.src;  // 获取图片的URL
-            showPopup(imageUrl, e.clientX, e.clientY);  // 显示自定义弹窗
-            return false; // 进一步确保阻止默认行为
+    // 用于跟踪 Ctrl 键的状态
+    let ctrlPressed = false;
+
+    // 监听 keydown 事件
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Control') {
+            ctrlPressed = true;
         }
-    }, true); // 使用捕获阶段
+    });
+
+    // 监听 keyup 事件
+    document.addEventListener('keyup', function(e) {
+        if (e.key === 'Control') {
+            ctrlPressed = false;
+        }
+    });
+
+    // 监听 click 事件
+    document.addEventListener('click', function(e) {
+        if (ctrlPressed && e.target.tagName.toLowerCase() === 'img') {
+            e.preventDefault();
+            e.stopPropagation();
+            var imageUrl = e.target.src;
+            showPopup(imageUrl);
+        }
+    }, true);
 
     // 显示弹窗的函数
-    function showPopup(imageUrl, x, y) {
+    function showPopup(imageUrl) {
         // 如果存在当前弹窗，先将其关闭
         if (currentPopup) {
             document.body.removeChild(currentPopup);
