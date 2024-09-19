@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         获取图片URL和二维码信息并提供复制功能
 // @namespace    http://tampermonkey.net/
-// @version      1.0
-// @description  Ctrl+右键点击图片时:显示URL、并识别其中可能存在的二维码(目前来看png格式最佳)，同时提供下载新生成的二维码功能
+// @version      1.1
+// @description  Ctrl+右键点击图片时:显示URL、并识别其中可能存在的二维码，同时提供下载新生成的二维码功能
 // @match        *://*/*
 // @grant        GM_setClipboard
 // @grant        GM_addStyle
