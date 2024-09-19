@@ -24,7 +24,7 @@
             z-index: 9999;
             font-family: Arial, sans-serif;
             width: 200px;  // 设置固定宽度
-            height: 400px;  // 设置固定高度
+            height: auto;
             overflow-y: auto;  // 添加垂直滚动条
             top: 50%;  // 垂直居中
             left: 50%;  // 水平居中
