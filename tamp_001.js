@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         获取图片URL和二维码信息并提供复制功能
 // @namespace    http://tampermonkey.net/
-// @version      0.7
+// @version      V1.0
 // @description  Ctrl+右键点击图片时:显示URL、并识别其中可能存在的二维码(目前来看png格式最佳)，同时提供下载新生成的二维码功能
 // @match        *://*/*
 // @grant        GM_setClipboard
@@ -14,6 +14,7 @@
 (function() {
     'use strict';
 
+    // 添加样式
     GM_addStyle(`
         #imageUrlPopup {
             position: fixed;
@@ -80,6 +81,7 @@
     let currentPopup = null;
     let ctrlPressed = false;
 
+    // 监听Ctrl键的按下和释放
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Control') ctrlPressed = true;
     });
@@ -88,6 +90,7 @@
         if (e.key === 'Control') ctrlPressed = false;
     });
 
+    // 监听鼠标右键点击事件
     document.addEventListener('mousedown', function(e) {
         if (ctrlPressed && e.button === 2 && e.target.tagName.toLowerCase() === 'img') {
             e.preventDefault();
@@ -97,6 +100,7 @@
         }
     }, true);
 
+    // 阻止默认的右键菜单
     document.addEventListener('contextmenu', function(e) {
         if (ctrlPressed && e.target.tagName.toLowerCase() === 'img') {
             e.preventDefault();
@@ -104,6 +108,7 @@
         }
     }, true);
 
+    // 显示弹出窗口
     function showPopup(imageUrl) {
         if (currentPopup) document.body.removeChild(currentPopup);
 
@@ -141,18 +146,23 @@
         detectQRCode(imageUrl);
     }
 
+    // 检测二维码
     function detectQRCode(imageUrl) {
         const img = new Image();
         img.crossOrigin = "Anonymous";
         img.onload = function() {
+            // 创建canvas并绘制图片
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
             canvas.width = img.width;
             canvas.height = img.height;
             ctx.drawImage(img, 0, 0, img.width, img.height);
             const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            
+            // 使用jsQR库检测二维码
             const code = jsQR(imageData.data, imageData.width, imageData.height);
 
+            // 更新UI显示检测结果
             const qrResult = document.getElementById('qrResult');
             const qrTextarea = document.getElementById('qrTextarea');
             const copyQrButton = document.getElementById('copyQrButton');
@@ -177,6 +187,7 @@
         img.src = imageUrl;
     }
 
+    // 生成新的二维码
     function generateQRCode(data) {
         const canvas = document.getElementById('qrCodeCanvas');
         QRCode.toCanvas(canvas, data, function (error) {
@@ -186,6 +197,7 @@
         });
     }
 
+    // 下载生成的二维码
     function downloadQRCode() {
         const canvas = document.getElementById('qrCodeCanvas');
         const link = document.createElement('a');
@@ -194,11 +206,13 @@
         link.click();
     }
 
+    // 自动调整textarea高度
     function autoResizeTextarea(textarea) {
         textarea.style.height = 'auto';
         textarea.style.height = textarea.scrollHeight + 'px';
     }
 
+    // 关闭弹出窗口
     function closePopup() {
         if (currentPopup) {
             document.body.removeChild(currentPopup);
@@ -207,6 +221,7 @@
         }
     }
 
+    // 点击弹出窗口外部时关闭
     function closePopupOnOutsideClick(event) {
         if (currentPopup && !currentPopup.contains(event.target)) {
             closePopup();
