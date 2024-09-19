@@ -1,12 +1,12 @@
 // ==UserScript==
 // @name         获取图片URL和二维码信息并提供复制功能
 // @namespace    http://tampermonkey.net/
-// @version      0.1
+// @version      0.2.1
 // @description  Ctrl+右键点击图片时:显示URL、并识别其中可能存在的二维码(目前来看png格式最佳)
 // @match        *://*/*
 // @grant        GM_setClipboard
 // @grant        GM_addStyle
-// @lision       GPL-3.0
+// @license      GPL-3.0
 // @require      https://cdn.jsdelivr.net/npm/jsqr@1.3.1/dist/jsQR.min.js
 // ==/UserScript==
 
@@ -40,7 +40,7 @@
             resize: none;
             //overflow: hidden;
             min-height: 20px;
-            max-height: auto;
+            max-height: 150px;
             text-align: justify;  // 添加两端对齐
         }
         #imageUrlPopup button {
