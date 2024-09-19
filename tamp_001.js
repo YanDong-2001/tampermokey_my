@@ -1,13 +1,8 @@
 // ==UserScript==
 // @name         获取图片URL和二维码信息并提供复制功能
 // @namespace    http://tampermonkey.net/
-<<<<<<< HEAD
 // @version      V1.0
 // @description  Ctrl+右键点击图片时:显示URL、并识别其中可能存在的二维码(目前来看png格式最佳)，同时提供下载新生成的二维码功能
-=======
-// @version      1.1
-// @description  Ctrl+右键点击图片时:显示URL、并识别其中可能存在的二维码，同时提供下载新生成的二维码功能
->>>>>>> f24fd91c9ef620c5ccfdff3022c4b330bd6813c9
 // @match        *://*/*
 // @grant        GM_setClipboard
 // @grant        GM_addStyle
@@ -19,11 +14,7 @@
 (function() {
     'use strict';
 
-<<<<<<< HEAD
     // 添加样式
-=======
-    // 添加自定义样式
->>>>>>> f24fd91c9ef620c5ccfdff3022c4b330bd6813c9
     GM_addStyle(`
         #imageUrlPopup {
             position: fixed;
@@ -87,29 +78,19 @@
         }
     `);
 
-    // 全局变量
-    let currentPopup = null; // 当前显示的弹窗
-    let ctrlPressed = false; // Ctrl键是否被按下
+    let currentPopup = null;
+    let ctrlPressed = false;
 
-<<<<<<< HEAD
     // 监听Ctrl键的按下和释放
-=======
-    // 监听Ctrl键的按下
->>>>>>> f24fd91c9ef620c5ccfdff3022c4b330bd6813c9
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Control') ctrlPressed = true;
     });
 
-    // 监听Ctrl键的释放
     document.addEventListener('keyup', function(e) {
         if (e.key === 'Control') ctrlPressed = false;
     });
 
-<<<<<<< HEAD
     // 监听鼠标右键点击事件
-=======
-    // 监听鼠标按下事件，处理Ctrl+右键点击图片
->>>>>>> f24fd91c9ef620c5ccfdff3022c4b330bd6813c9
     document.addEventListener('mousedown', function(e) {
         if (ctrlPressed && e.button === 2 && e.target.tagName.toLowerCase() === 'img') {
             e.preventDefault();
@@ -127,16 +108,10 @@
         }
     }, true);
 
-<<<<<<< HEAD
     // 显示弹出窗口
-=======
-    // 显示弹窗
->>>>>>> f24fd91c9ef620c5ccfdff3022c4b330bd6813c9
     function showPopup(imageUrl) {
-        // 如果已有弹窗，先移除
         if (currentPopup) document.body.removeChild(currentPopup);
 
-        // 创建新弹窗
         var popup = document.createElement('div');
         popup.id = 'imageUrlPopup';
         popup.innerHTML = `
@@ -150,40 +125,28 @@
             <button id="downloadQrButton" style="display:none;">下载新二维码</button>
         `;
 
-        // 添加弹窗到页面并调整文本区域大小
         document.body.appendChild(popup);
         popup.querySelectorAll('textarea').forEach(autoResizeTextarea);
         currentPopup = popup;
 
-        // 添加复制URL按钮事件
         document.getElementById('copyUrlButton').addEventListener('click', function() {
             GM_setClipboard(imageUrl);
             alert('图片URL已复制到剪贴板');
             closePopup();
         });
 
-        // 添加复制二维码信息按钮事件
         document.getElementById('copyQrButton').addEventListener('click', function() {
             GM_setClipboard(document.getElementById('qrTextarea').value);
             alert('二维码信息已复制到剪贴板');
             closePopup();
         });
 
-        // 添加下载二维码按钮事件
         document.getElementById('downloadQrButton').addEventListener('click', downloadQRCode);
-        
-        // 添加点击外部关闭弹窗事件
         document.addEventListener('click', closePopupOnOutsideClick);
-        
-        // 开始检测二维码
         detectQRCode(imageUrl);
     }
 
-<<<<<<< HEAD
     // 检测二维码
-=======
-    // 检测图片中的二维码
->>>>>>> f24fd91c9ef620c5ccfdff3022c4b330bd6813c9
     function detectQRCode(imageUrl) {
         const img = new Image();
         img.crossOrigin = "Anonymous";
@@ -194,25 +157,15 @@
             canvas.width = img.width;
             canvas.height = img.height;
             ctx.drawImage(img, 0, 0, img.width, img.height);
-            
-            // 图像预处理
             const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-<<<<<<< HEAD
             
             // 使用jsQR库检测二维码
             const code = jsQR(imageData.data, imageData.width, imageData.height);
-=======
-            const processedImageData = preProcessImage(imageData);
-            
-            // 使用jsQR库检测二维码
-            const code = jsQR(processedImageData.data, processedImageData.width, processedImageData.height);
->>>>>>> f24fd91c9ef620c5ccfdff3022c4b330bd6813c9
 
             // 更新UI显示检测结果
             const qrResult = document.getElementById('qrResult');
             const qrTextarea = document.getElementById('qrTextarea');
             const copyQrButton = document.getElementById('copyQrButton');
-            
             if (code) {
                 qrResult.textContent = "检测到二维码：";
                 qrTextarea.value = code.data;
@@ -234,44 +187,6 @@
         img.src = imageUrl;
     }
 
-<<<<<<< HEAD
-=======
-    // 图像预处理函数
-    function preProcessImage(imageData) {
-        const data = imageData.data;
-        for (let i = 0; i < data.length; i += 4) {
-            // 转换为灰度
-            const avg = (data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114);
-            
-            // 应用自适应阈值
-            const threshold = getLocalThreshold(data, i, imageData.width, imageData.height);
-            const value = avg < threshold ? 0 : 255;
-            
-            data[i] = data[i + 1] = data[i + 2] = value;
-        }
-        return imageData;
-    }
-
-    // 获取局部阈值
-    function getLocalThreshold(data, index, width, height) {
-        const blockSize = 11; // 局部区域大小
-        const x = (index / 4) % width;
-        const y = Math.floor((index / 4) / width);
-        let sum = 0;
-        let count = 0;
-
-        for (let j = Math.max(0, y - blockSize / 2); j < Math.min(height, y + blockSize / 2); j++) {
-            for (let i = Math.max(0, x - blockSize / 2); i < Math.min(width, x + blockSize / 2); i++) {
-                const idx = (j * width + i) * 4;
-                sum += (data[idx] * 0.299 + data[idx + 1] * 0.587 + data[idx + 2] * 0.114);
-                count++;
-            }
-        }
-
-        return sum / count;
-    }
-
->>>>>>> f24fd91c9ef620c5ccfdff3022c4b330bd6813c9
     // 生成新的二维码
     function generateQRCode(data) {
         const canvas = document.getElementById('qrCodeCanvas');
@@ -291,21 +206,13 @@
         link.click();
     }
 
-<<<<<<< HEAD
     // 自动调整textarea高度
-=======
-    // 自动调整文本区域大小
->>>>>>> f24fd91c9ef620c5ccfdff3022c4b330bd6813c9
     function autoResizeTextarea(textarea) {
         textarea.style.height = 'auto';
         textarea.style.height = textarea.scrollHeight + 'px';
     }
 
-<<<<<<< HEAD
     // 关闭弹出窗口
-=======
-    // 关闭弹窗
->>>>>>> f24fd91c9ef620c5ccfdff3022c4b330bd6813c9
     function closePopup() {
         if (currentPopup) {
             document.body.removeChild(currentPopup);
@@ -314,11 +221,7 @@
         }
     }
 
-<<<<<<< HEAD
     // 点击弹出窗口外部时关闭
-=======
-    // 点击弹窗外部时关闭弹窗
->>>>>>> f24fd91c9ef620c5ccfdff3022c4b330bd6813c9
     function closePopupOnOutsideClick(event) {
         if (currentPopup && !currentPopup.contains(event.target)) {
             closePopup();
