@@ -1,13 +1,14 @@
 // ==UserScript==
 // @name         获取图片URL和二维码信息并提供复制功能
 // @namespace    http://tampermonkey.net/
-// @version      0.2.1
-// @description  Ctrl+右键点击图片时:显示URL、并识别其中可能存在的二维码(目前来看png格式最佳)
+// @version      0.3.0
+// @description  Ctrl+右键点击图片时:显示URL、并识别其中可能存在的二维码(目前来看png格式最佳)，同时提供下载新生成的二维码功能
 // @match        *://*/*
 // @grant        GM_setClipboard
 // @grant        GM_addStyle
 // @license      GPL-3.0
 // @require      https://cdn.jsdelivr.net/npm/jsqr@1.3.1/dist/jsQR.min.js
+// @require      https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js
 // ==/UserScript==
 
 (function() {
@@ -22,8 +23,12 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             z-index: 9999;
             font-family: Arial, sans-serif;
-            max-width: 80%;  // 增加最大宽度
-            height: auto;  // 自动调整宽度
+            width: 200px;  // 设置固定宽度
+            height: 400px;  // 设置固定高度
+            overflow-y: auto;  // 添加垂直滚动条
+            top: 50%;  // 垂直居中
+            left: 50%;  // 水平居中
+            transform: translate(-50%, -50%);  // 确保完全居中
         }
         #imageUrlPopup p {
             margin: 0 0 10px 0;
@@ -31,17 +36,16 @@
             color: #333;
         }
         #imageUrlPopup textarea {
-            width: 100%;
+            width: calc(100% - 16px);  // 考虑内边距
             padding: 8px;
             border: 1px solid #ddd;
             border-radius: 4px;
             margin-bottom: 10px;
             font-size: 14px;
             resize: none;
-            //overflow: hidden;
             min-height: 20px;
             max-height: 150px;
-            text-align: justify;  // 添加两端对齐
+            text-align: justify;
         }
         #imageUrlPopup button {
             width: 100%;
@@ -56,6 +60,21 @@
         }
         #imageUrlPopup button:hover {
             background-color: #45a049;
+        }
+        #qrCodeCanvas {
+            display: none;
+            margin-top: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            max-width: 100%;  // 确保画布不超过弹窗宽度
+            height: auto;  // 保持宽高比
+        }
+        #downloadQrButton {
+            margin-top: 10px;
+            background-color: #008CBA;
+        }
+        #downloadQrButton:hover {
+            background-color: #007B9A;
         }
     `);
 
@@ -90,17 +109,21 @@
             <p id="qrResult">正在识别二维码...</p>
             <textarea id="qrTextarea" readonly style="display:none;"></textarea>
             <button id="copyQrButton" style="display:none;">复制二维码信息</button>
+            <canvas id="qrCodeCanvas"></canvas>
+            <button id="downloadQrButton" style="display:none;">下载新二维码</button>
         `;
 
         // 将弹窗添加到页面
         document.body.appendChild(popup);
 
-        // 居中弹窗
+        // 移除以下代码块，因为我们现在使用 CSS 来居中弹窗
+        /*
         var rect = popup.getBoundingClientRect();
         var centerX = (window.innerWidth - rect.width) / 2;
         var centerY = (window.innerHeight - rect.height) / 2;
         popup.style.left = Math.max(0, centerX) + 'px';
         popup.style.top = Math.max(0, centerY) + 'px';
+        */
 
         // 自动调整textarea的高度
         var textareas = popup.querySelectorAll('textarea');
@@ -123,6 +146,9 @@
             alert('二维码信息已复制到剪贴板');
             closePopup();
         });
+
+        // 为下载二维码按钮添加点击事件
+        document.getElementById('downloadQrButton').addEventListener('click', downloadQRCode);
 
         // 点击弹窗外部时关闭弹窗
         document.addEventListener('click', closePopupOnOutsideClick);
@@ -153,6 +179,7 @@
                 qrTextarea.style.display = 'block';
                 copyQrButton.style.display = 'block';
                 autoResizeTextarea(qrTextarea);
+                generateQRCode(code.data);
             } else {
                 qrResult.textContent = "未检测到二维码";
                 qrTextarea.style.display = 'none';
@@ -166,6 +193,26 @@
             document.getElementById('copyQrButton').style.display = 'none';
         };
         img.src = imageUrl;
+    }
+
+    // 添加生成新二维码的函数
+    function generateQRCode(data) {
+        const canvas = document.getElementById('qrCodeCanvas');
+        QRCode.toCanvas(canvas, data, function (error) {
+            if (error) console.error(error);
+            canvas.style.display = 'block';
+            document.getElementById('downloadQrButton').style.display = 'block';
+        });
+    }
+
+    // 添加下载二维码的函数
+    function downloadQRCode() {
+        const canvas = document.getElementById('qrCodeCanvas');
+        const dataURL = canvas.toDataURL('image/png');
+        const link = document.createElement('a');
+        link.download = 'qrcode.png';
+        link.href = dataURL;
+        link.click();
     }
 
     // 自动调整textarea高度的函数
