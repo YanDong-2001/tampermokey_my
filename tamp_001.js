@@ -14,6 +14,7 @@
 (function() {
     'use strict';
 
+    // 添加自定义样式
     GM_addStyle(`
         #imageUrlPopup {
             position: fixed;
@@ -77,17 +78,21 @@
         }
     `);
 
-    let currentPopup = null;
-    let ctrlPressed = false;
+    // 全局变量
+    let currentPopup = null; // 当前显示的弹窗
+    let ctrlPressed = false; // Ctrl键是否被按下
 
+    // 监听Ctrl键的按下
     document.addEventListener('keydown', function(e) {
         if (e.key === 'Control') ctrlPressed = true;
     });
 
+    // 监听Ctrl键的释放
     document.addEventListener('keyup', function(e) {
         if (e.key === 'Control') ctrlPressed = false;
     });
 
+    // 监听鼠标按下事件，处理Ctrl+右键点击图片
     document.addEventListener('mousedown', function(e) {
         if (ctrlPressed && e.button === 2 && e.target.tagName.toLowerCase() === 'img') {
             e.preventDefault();
@@ -97,6 +102,7 @@
         }
     }, true);
 
+    // 阻止默认的右键菜单
     document.addEventListener('contextmenu', function(e) {
         if (ctrlPressed && e.target.tagName.toLowerCase() === 'img') {
             e.preventDefault();
@@ -104,9 +110,12 @@
         }
     }, true);
 
+    // 显示弹窗
     function showPopup(imageUrl) {
+        // 如果已有弹窗，先移除
         if (currentPopup) document.body.removeChild(currentPopup);
 
+        // 创建新弹窗
         var popup = document.createElement('div');
         popup.id = 'imageUrlPopup';
         popup.innerHTML = `
@@ -120,42 +129,57 @@
             <button id="downloadQrButton" style="display:none;">下载新二维码</button>
         `;
 
+        // 添加弹窗到页面并调整文本区域大小
         document.body.appendChild(popup);
         popup.querySelectorAll('textarea').forEach(autoResizeTextarea);
         currentPopup = popup;
 
+        // 添加复制URL按钮事件
         document.getElementById('copyUrlButton').addEventListener('click', function() {
             GM_setClipboard(imageUrl);
             alert('图片URL已复制到剪贴板');
             closePopup();
         });
 
+        // 添加复制二维码信息按钮事件
         document.getElementById('copyQrButton').addEventListener('click', function() {
             GM_setClipboard(document.getElementById('qrTextarea').value);
             alert('二维码信息已复制到剪贴板');
             closePopup();
         });
 
+        // 添加下载二维码按钮事件
         document.getElementById('downloadQrButton').addEventListener('click', downloadQRCode);
+        
+        // 添加点击外部关闭弹窗事件
         document.addEventListener('click', closePopupOnOutsideClick);
+        
+        // 开始检测二维码
         detectQRCode(imageUrl);
     }
 
+    // 检测图片中的二维码
     function detectQRCode(imageUrl) {
         const img = new Image();
         img.crossOrigin = "Anonymous";
         img.onload = function() {
+            // 创建canvas并绘制图片
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
             canvas.width = img.width;
             canvas.height = img.height;
             ctx.drawImage(img, 0, 0, img.width, img.height);
             const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            
+            // 使用jsQR库检测二维码
             const code = jsQR(imageData.data, imageData.width, imageData.height);
 
+            // 获取相关DOM元素
             const qrResult = document.getElementById('qrResult');
             const qrTextarea = document.getElementById('qrTextarea');
             const copyQrButton = document.getElementById('copyQrButton');
+            
+            // 处理检测结果
             if (code) {
                 qrResult.textContent = "检测到二维码：";
                 qrTextarea.value = code.data;
@@ -177,6 +201,7 @@
         img.src = imageUrl;
     }
 
+    // 生成新的二维码
     function generateQRCode(data) {
         const canvas = document.getElementById('qrCodeCanvas');
         QRCode.toCanvas(canvas, data, function (error) {
@@ -186,6 +211,7 @@
         });
     }
 
+    // 下载生成的二维码
     function downloadQRCode() {
         const canvas = document.getElementById('qrCodeCanvas');
         const link = document.createElement('a');
@@ -194,11 +220,13 @@
         link.click();
     }
 
+    // 自动调整文本区域大小
     function autoResizeTextarea(textarea) {
         textarea.style.height = 'auto';
         textarea.style.height = textarea.scrollHeight + 'px';
     }
 
+    // 关闭弹窗
     function closePopup() {
         if (currentPopup) {
             document.body.removeChild(currentPopup);
@@ -207,6 +235,7 @@
         }
     }
 
+    // 点击弹窗外部时关闭弹窗
     function closePopupOnOutsideClick(event) {
         if (currentPopup && !currentPopup.contains(event.target)) {
             closePopup();
