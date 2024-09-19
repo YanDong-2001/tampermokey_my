@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         获取图片URL和二维码信息并提供复制功能
 // @namespace    http://tampermonkey.net/
-// @version      0.5
+// @version      0.6
 // @description  Ctrl+右键点击图片时:显示URL、并识别其中可能存在的二维码(目前来看png格式最佳)，同时提供下载新生成的二维码功能
 // @match        *://*/*
 // @grant        GM_setClipboard
@@ -96,6 +96,25 @@
             ctrlPressed = false;
         }
     });
+
+    // 监听 mousedown 事件
+    document.addEventListener('mousedown', function(e) {
+        if (ctrlPressed && e.button === 2 && e.target.tagName.toLowerCase() === 'img') {
+            e.preventDefault();
+            e.stopPropagation();
+            var imageUrl = e.target.src;
+            showPopup(imageUrl);
+            return false;
+        }
+    }, true);
+
+    // 阻止默认的右键菜单
+    document.addEventListener('contextmenu', function(e) {
+        if (ctrlPressed && e.target.tagName.toLowerCase() === 'img') {
+            e.preventDefault();
+            return false;
+        }
+    }, true);
 
     // 监听 click 事件
     document.addEventListener('click', function(e) {
