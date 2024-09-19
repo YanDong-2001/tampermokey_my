@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         获取图片URL和二维码信息并提供复制功能
 // @namespace    http://tampermonkey.net/
-// @version      0.3.0
+// @version      0.4
 // @description  Ctrl+右键点击图片时:显示URL、并识别其中可能存在的二维码(目前来看png格式最佳)，同时提供下载新生成的二维码功能
 // @match        *://*/*
 // @grant        GM_setClipboard
@@ -23,12 +23,11 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             z-index: 9999;
             font-family: Arial, sans-serif;
-            width: 200px;  // 设置固定宽度
+            width: 200px;  // 保持固定宽度
             height: auto;
-            overflow-y: auto;  // 添加垂直滚动条
-            top: 50%;  // 垂直居中
-            left: 50%;  // 水平居中
-            transform: translate(-50%, -50%);  // 确保完全居中
+            overflow-y: auto;  // 保留垂直滚动条
+            top: 10px;  // 距离顶部10像素
+            left: 10px;  // 距离左侧10像素
         }
         #imageUrlPopup p {
             margin: 0 0 10px 0;
@@ -81,15 +80,17 @@
     // 用于存储当前弹窗的变量
     let currentPopup = null;
 
-    // 监听整个文档的右键点击事件
-    document.addEventListener('contextmenu', function(e) {
-        // 检查是否同时按下Ctrl键和右键点击的是否为图片
-        if (e.ctrlKey && e.target.tagName.toLowerCase() === 'img') {
+    // 修改事件监听器
+    document.addEventListener('mousedown', function(e) {
+        // 检查是否同时按下Ctrl键和鼠标右键，以及点击的是否为图片
+        if (e.ctrlKey && e.button === 2 && e.target.tagName.toLowerCase() === 'img') {
             e.preventDefault();  // 阻止默认的右键菜单
+            e.stopPropagation(); // 阻止事件冒泡
             var imageUrl = e.target.src;  // 获取图片的URL
             showPopup(imageUrl, e.clientX, e.clientY);  // 显示自定义弹窗
+            return false; // 进一步确保阻止默认行为
         }
-    }, false);
+    }, true); // 使用捕获阶段
 
     // 显示弹窗的函数
     function showPopup(imageUrl, x, y) {
@@ -115,15 +116,6 @@
 
         // 将弹窗添加到页面
         document.body.appendChild(popup);
-
-        // 移除以下代码块，因为我们现在使用 CSS 来居中弹窗
-        /*
-        var rect = popup.getBoundingClientRect();
-        var centerX = (window.innerWidth - rect.width) / 2;
-        var centerY = (window.innerHeight - rect.height) / 2;
-        popup.style.left = Math.max(0, centerX) + 'px';
-        popup.style.top = Math.max(0, centerY) + 'px';
-        */
 
         // 自动调整textarea的高度
         var textareas = popup.querySelectorAll('textarea');
